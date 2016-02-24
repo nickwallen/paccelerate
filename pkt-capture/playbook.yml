@@ -1,0 +1,23 @@
+---
+
+#
+# sends out network traffic
+#
+- hosts: source
+  sudo: yes
+  vars:
+    pcap_replay_interface: "enp0s8"
+  roles:
+    - role: pcap-replay
+
+#
+# forwards traffic from one network to another
+#
+- hosts: capture
+  sudo: yes
+  vars:
+      dpdk_device: ["00:08.0","00:09.0"]
+      dpdk_target: "x86_64-native-linuxapp-gcc"
+      num_huge_pages: 64
+  roles:
+    - role: dpdk
