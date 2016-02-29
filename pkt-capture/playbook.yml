@@ -1,7 +1,7 @@
 ---
 
 #
-# sends out network traffic
+# produces network traffic
 #
 - hosts: source
   sudo: yes
@@ -11,13 +11,19 @@
     - role: pcap-replay
 
 #
-# forwards traffic from one network to another
+# consumes network traffic
 #
-- hosts: capture
+- hosts: sink
   sudo: yes
   vars:
-      dpdk_device: ["00:08.0","00:09.0"]
+      dpdk_device: ["00:08.0"]
       dpdk_target: "x86_64-native-linuxapp-gcc"
-      num_huge_pages: 64
+      num_huge_pages: 512
   roles:
     - role: dpdk
+    - role: librdkafka
+
+# - hosts: kafka
+#   sudo: yes
+#   roles:
+#     - role: kafka

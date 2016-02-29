@@ -7,6 +7,9 @@ Getting Started
 ---------------
 
 ```
+vagrant plugin install vagrant-vbguest
+
+
 ansible-galaxy install -r requirements.yml
 vagrant up
 ```

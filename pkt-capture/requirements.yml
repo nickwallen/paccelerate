@@ -7,3 +7,6 @@
 
 - name: kafka
   src: https://github.com/nickwallen/metron-provision-kafka.git
+
+- name: librdkafka
+  src: https://github.com/nickwallen/metron-provision-librdkafka
