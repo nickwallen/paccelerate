@@ -41,6 +41,10 @@
 #define DEBUG
 
 // logging setup
+#define LOG_INFO(log_type, fmt, args...) do {	\
+	RTE_LOG(INFO, log_type, fmt, ##args);		\
+} while (0)
+
 #ifdef DEBUG
 #define LOG_LEVEL RTE_LOG_DEBUG
 #define LOG_DEBUG(log_type, fmt, args...) do {	\
@@ -51,16 +55,13 @@
 #define LOG_DEBUG(log_type, fmt, args...) do {} while (0)
 #endif
 
-#define RTE_LOGTYPE_DISTRAPP RTE_LOGTYPE_USER1
-
 // mask of enabled ports
 static uint32_t enabled_port_mask;
 volatile uint8_t quit_signal;
 volatile uint8_t quit_signal_rx;
 
-/*
- * tracks packet processing stats
- */
+
+// tracks packet processing stats
 static volatile struct app_stats {
 	struct {
 		uint64_t rx_pkts;
@@ -95,34 +96,35 @@ static inline int port_init(uint8_t port, struct rte_mempool *mbuf_pool)
 	uint16_t q;
   const uint16_t rxRings = 1;
   const uint16_t txRings = 1;
+	int socket = rte_eth_dev_socket_id(port);
 
 	if (port >= rte_eth_dev_count()) {
-		printf("Error: Port %"PRIu8" does not exist; only %u known port(s)\n",
+		rte_exit(EXIT_FAILURE, "Port %"PRIu8" does not exist; only %u known port(s)",
 			port, rte_eth_dev_count());
     return -1;
   }
 
 	retval = rte_eth_dev_configure(port, rxRings, txRings, &port_conf);
 	if (retval != 0) {
-		printf("Error: Unable to configure port %"PRIu8"\n", port);
+		rte_exit(EXIT_FAILURE, "Unable to configure port %"PRIu8"\n", port);
 		return retval;
   }
 
   // setup the receive rings
 	for (q = 0; q < rxRings; q++) {
-		retval = rte_eth_rx_queue_setup(port, q, RX_RING_SIZE,
-						  rte_eth_dev_socket_id(port), NULL, mbuf_pool);
+		retval = rte_eth_rx_queue_setup(port, q, RX_RING_SIZE, socket, NULL, mbuf_pool);
 		if (retval < 0) {
+			rte_exit(EXIT_FAILURE, "Unable to setup rx queue on port %"PRIu8"\n", port);
 			return retval;
     }
 	}
 
 	// setup the transmit rings
 	for (q = 0; q < txRings; q++) {
-		retval = rte_eth_tx_queue_setup(port, q, TX_RING_SIZE,
-			rte_eth_dev_socket_id(port), NULL);
+		retval = rte_eth_tx_queue_setup(port, q, TX_RING_SIZE, socket, NULL);
 
 		if (retval < 0) {
+			rte_exit(EXIT_FAILURE, "Unable to setup rx queue on port %"PRIu8"\n", port);
 			return retval;
 		}
 }
@@ -130,6 +132,7 @@ static inline int port_init(uint8_t port, struct rte_mempool *mbuf_pool)
   // start the receive and transmit units on the device
 	retval = rte_eth_dev_start(port);
 	if (retval < 0) {
+		rte_exit(EXIT_FAILURE, "Unable to start device on port %"PRIu8"\n", port);
 		return retval;
   }
 
@@ -143,15 +146,14 @@ static inline int port_init(uint8_t port, struct rte_mempool *mbuf_pool)
 
   // if still no link information, must be down
 	if (!link.link_status) {
-		printf("Error: Link down on port %"PRIu8"\n", port);
+		rte_exit(EXIT_FAILURE, "Link down on port %"PRIu8"\n", port);
 		return 0;
 	}
 
   // print diagnostics
 	struct ether_addr addr;
 	rte_eth_macaddr_get(port, &addr);
-	printf("Port %u MAC: %02"PRIx8" %02"PRIx8" %02"PRIx8
-			" %02"PRIx8" %02"PRIx8" %02"PRIx8"\n",
+	LOG_INFO(USER1, "Port %u MAC: %02"PRIx8" %02"PRIx8" %02"PRIx8" %02"PRIx8" %02"PRIx8" %02"PRIx8"\n",
 			(unsigned)port,
 			addr.addr_bytes[0], addr.addr_bytes[1],
 			addr.addr_bytes[2], addr.addr_bytes[3],
@@ -208,7 +210,7 @@ static int receive_packets(struct lcore_params *p)
     }
 	}
 
-	printf("\nCore %u doing packet RX.\n", rte_lcore_id());
+	LOG_INFO(USER1, "Core %u doing packet receive and distribution.\n", rte_lcore_id());
 	port = 0;
 	while (!quit_signal_rx) {
 
@@ -260,14 +262,14 @@ static int send_packets(struct lcore_params *p) {
 	const unsigned id = p->worker_id;
 	struct rte_mbuf *buf = NULL;
 
-	printf("Notice: Core %u is a worker core.\n", rte_lcore_id());
+	LOG_INFO(USER1, "Core %u is a worker core.\n", rte_lcore_id());
 	while (!quit_signal) {
 		buf = rte_distributor_get_pkt(d, id, buf);
 
     // TODO: do work?? send to kafka?
-    printf("Received packet: worker = %u, core = %u, pkt_len = %u, data_len = %u \n",
-			id, rte_lcore_id(), buf->pkt_len, buf->data_len);
 
+		LOG_DEBUG(USER1, "packet received; core = %u, pkt_len = %u, data_len = %u \n",
+			rte_lcore_id(), buf->pkt_len, buf->data_len);
 	}
 	return 0;
 }
@@ -375,7 +377,7 @@ static int parse_args(int argc, char **argv)
  */
 static void sig_handler(int sig_num)
 {
-	printf("Notice: Exiting on signal '%d'\n", sig_num);
+	LOG_INFO(USER1, "Exiting on signal '%d'\n", sig_num);
 
   // set quit flag for rx thread to exit
 	quit_signal_rx = 1;
@@ -440,13 +442,13 @@ int main(int argc, char *argv[])
 
 		// skip over ports that are not enabled
 		if ((enabled_port_mask & (1 << port_id)) == 0) {
-			printf("Warning: Skipping over disabled port '%d'\n", port_id);
+			LOG_INFO(USER1, "Skipping over disabled port '%d'\n", port_id);
 			nb_ports_available--;
 			continue;
 		}
 
 		// initialize the port
-    printf("Notice: Initializing port %u\n", (unsigned) port_id);
+    LOG_INFO(USER1, "Initializing port %u\n", (unsigned) port_id);
 		if (port_init(port_id, mbuf_pool) != 0) {
 			rte_exit(EXIT_FAILURE, "Cannot initialize port %"PRIu8"\n", port_id);
     }
@@ -471,7 +473,7 @@ int main(int argc, char *argv[])
     }
 
     // launch the worker process
-		printf("Notice: Launching worker on core %u\n", lcore_id);
+		LOG_INFO(USER1, "Launching worker on core %u\n", lcore_id);
 		*p = (struct lcore_params){ worker_id, nb_workers, d, mbuf_pool };
 		rte_eal_remote_launch((lcore_function_t *)send_packets, p, lcore_id);
 
