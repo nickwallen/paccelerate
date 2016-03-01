@@ -21,6 +21,7 @@
 
 #include <librdkafka/rdkafka.h>
 #include <string.h>
+#include <sys/time.h>
 
 #include <rte_common.h>
 #include <rte_mbuf.h>

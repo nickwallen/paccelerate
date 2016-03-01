@@ -95,6 +95,15 @@ void kaf_close(void)
 }
 
 /**
+ * The current time in microseconds.
+ */
+static uint64_t current_time(void) {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return tv.tv_sec * (uint64_t) 1000000 + tv.tv_usec;
+}
+
+/**
  * Publish a set of packets to a kafka topic.
  */
 int kaf_send(struct rte_mbuf *data, int pkt_count, int conn_id)
@@ -104,6 +113,11 @@ int kaf_send(struct rte_mbuf *data, int pkt_count, int conn_id)
   int pkts_sent = 0;
   int drops;
   rd_kafka_message_t kaf_msgs[pkt_count];
+  char key_buf[32];
+
+  // stamp each message with os clock time in lieu of an accurate
+  // timestamp from the network device
+  sprintf(key_buf, "%"PRIu64"", current_time());
 
   // find the topic connection based on the conn_id
   rd_kafka_topic_t *kaf_topic = kaf_top_h[conn_id];
@@ -116,8 +130,8 @@ int kaf_send(struct rte_mbuf *data, int pkt_count, int conn_id)
     kaf_msgs[i].partition = RD_KAFKA_PARTITION_UA;
     kaf_msgs[i].payload = rte_ctrlmbuf_data(&data[i]);
     kaf_msgs[i].len = rte_ctrlmbuf_len(&data[i]);
-    kaf_msgs[i].key = NULL;
-    kaf_msgs[i].key_len = 0;
+    kaf_msgs[i].key = key_buf;
+    kaf_msgs[i].key_len = sizeof(key_buf);
     kaf_msgs[i].offset = 0;
   }
 
