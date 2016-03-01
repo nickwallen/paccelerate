@@ -64,6 +64,7 @@
 #include <rte_malloc.h>
 
 #include "args.h"
+#include "kafka.h"
 
 #define RX_RING_SIZE 256
 #define TX_RING_SIZE 512
@@ -101,8 +102,8 @@ volatile uint8_t quit_signal_rx;
 volatile struct app_stats {
 	struct {
 		uint64_t received_pkts;
-		uint64_t returned_pkts;
 		uint64_t enqueued_pkts;
+		uint64_t sent_pkts;
 	} rx __rte_cache_aligned;
 } app_stats;
 
@@ -136,12 +137,6 @@ struct lcore_params {
 
 } __rte_cache_aligned;
 
-// int init_port(uint8_t port, struct rte_mempool *mbuf_pool);
-// void quit_workers(struct rte_distributor *d, struct rte_mempool *p, unsigned num_workers);
-// int receive_packets(struct lcore_params *p);
-// int send_packets(struct lcore_params *p);
-// void print_stats(void);
-// void sig_handler(int sig_num);
 int main(int argc, char *argv[]);
 
 #endif

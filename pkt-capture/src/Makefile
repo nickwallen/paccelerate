@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
 ifeq ($(RTE_SDK),)
 $(error "Please define RTE_SDK environment variable")
 endif
@@ -28,9 +29,14 @@ include $(RTE_SDK)/mk/rte.vars.mk
 APP = pcapture
 
 # all source are stored in SRCS-y
-SRCS-y := main.c args.c
+SRCS-y := main.c args.c kafka.c
 
-CFLAGS += $(WERROR_FLAGS)
+KAFKALIB    = -lrdkafka -L/usr/local/lib
+KAFKAINC    = -I/usr/local/include/librdkafka/
+
+LDLIBS += $(KAFKALIB)
+CFLAGS += $(WERROR_FLAGS) $(KAFKAINC)
+
 
 # workaround for a gcc bug with noreturn attribute
 # http://gcc.gnu.org/bugzilla/show_bug.cgi?id=12603

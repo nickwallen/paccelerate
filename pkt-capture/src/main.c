@@ -158,7 +158,7 @@ static int receive_packets(struct lcore_params *p)
 
     // track packets completed by the workers
 		const uint16_t nb_ret = rte_distributor_returned_pkts(d, bufs, BURST_SIZE*2);
-		app_stats.rx.returned_pkts += nb_ret;
+		app_stats.rx.enqueued_pkts += nb_ret;
 		if (unlikely(nb_ret == 0)) {
 			continue;
     }
@@ -196,7 +196,7 @@ static int send_packets(struct lcore_params *p) {
 			rte_lcore_id(), buf->pkt_len, buf->data_len);
 
     // TODO: do work?? send to kafka?
-
+		kaf_send(buf, 1, 0);
 	}
 	return 0;
 }
@@ -208,8 +208,8 @@ static void print_stats(void)
 
 	printf("\nThread stats:\n");
 	printf(" - Received:    %"PRIu64"\n", app_stats.rx.received_pkts);
-	printf(" - Processed:   %"PRIu64"\n", app_stats.rx.returned_pkts);
-	printf(" - Enqueued:    %"PRIu64"\n", app_stats.rx.enqueued_pkts);
+	printf(" - Queued:      %"PRIu64"\n", app_stats.rx.enqueued_pkts);
+	printf(" - Sent:        %"PRIu64"\n", app_stats.rx.sent_pkts);
 
 	for (i = 0; i < rte_eth_dev_count(); i++) {
 		rte_eth_stats_get(i, &eth_stats);
@@ -308,6 +308,8 @@ int main(int argc, char *argv[])
 	if (!nb_ports_available) {
 		rte_exit(EXIT_FAILURE, "Error: No available enabled ports. Portmask set?\n");
 	}
+
+	kaf_init(1);
 
   // the distributor will dispatch packets to 1 or more workers
 	d = rte_distributor_create("master", rte_socket_id(), nb_workers);

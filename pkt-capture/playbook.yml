@@ -22,8 +22,4 @@
   roles:
     - role: dpdk
     - role: librdkafka
-
-# - hosts: kafka
-#   sudo: yes
-#   roles:
-#     - role: kafka
+    - role: kafka
