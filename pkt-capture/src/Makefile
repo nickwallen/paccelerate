@@ -28,7 +28,7 @@ include $(RTE_SDK)/mk/rte.vars.mk
 APP = pcapture
 
 # all source are stored in SRCS-y
-SRCS-y := main.c
+SRCS-y := main.c args.c
 
 CFLAGS += $(WERROR_FLAGS)
 

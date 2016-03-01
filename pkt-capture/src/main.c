@@ -16,80 +16,13 @@
  * limitations under the License.
  */
 
-#include <stdint.h>
-#include <inttypes.h>
-#include <unistd.h>
-#include <signal.h>
-#include <getopt.h>
-
-#include <rte_eal.h>
-#include <rte_ethdev.h>
-#include <rte_cycles.h>
-#include <rte_malloc.h>
-#include <rte_debug.h>
-#include <rte_prefetch.h>
-#include <rte_distributor.h>
-
-#define RX_RING_SIZE 256
-#define TX_RING_SIZE 512
-#define NUM_MBUFS ((64*1024)-1)
-#define MBUF_CACHE_SIZE 250
-#define BURST_SIZE 32
-#define RTE_RING_SZ 1024
-
-// uncommnet below line to enable debug logs
-#define DEBUG
-
-// logging setup
-#define LOG_INFO(log_type, fmt, args...) do {	\
-	RTE_LOG(INFO, log_type, fmt, ##args);		\
-} while (0)
-
-#ifdef DEBUG
-#define LOG_LEVEL RTE_LOG_DEBUG
-#define LOG_DEBUG(log_type, fmt, args...) do {	\
-	RTE_LOG(DEBUG, log_type, fmt, ##args);		\
-} while (0)
-#else
-#define LOG_LEVEL RTE_LOG_INFO
-#define LOG_DEBUG(log_type, fmt, args...) do {} while (0)
-#endif
-
-// mask of enabled ports
-static uint32_t enabled_port_mask;
-volatile uint8_t quit_signal;
-volatile uint8_t quit_signal_rx;
-
-
-// tracks packet processing stats
-static volatile struct app_stats {
-	struct {
-		uint64_t rx_pkts;
-		uint64_t returned_pkts;
-		uint64_t enqueued_pkts;
-	} rx __rte_cache_aligned;
-} app_stats;
-
-static const struct rte_eth_conf port_conf_default = {
-	.rxmode = {
-		.mq_mode = ETH_MQ_RX_RSS,
-		.max_rx_pkt_len = ETHER_MAX_LEN,
-	},
-	.txmode = {
-		.mq_mode = ETH_MQ_TX_NONE,
-	},
-	.rx_adv_conf = {
-		.rss_conf = {
-			.rss_hf = ETH_RSS_IP | ETH_RSS_UDP | ETH_RSS_TCP | ETH_RSS_SCTP,
-		}
-	},
-};
+#include "main.h"
 
 /*
  * Initialize a port using global settings and with the rx buffers
  * coming from the mbuf_pool passed as parameter
  */
-static inline int port_init(uint8_t port, struct rte_mempool *mbuf_pool)
+static inline int init_port(uint8_t port, struct rte_mempool *mbuf_pool)
 {
 	struct rte_eth_conf port_conf = port_conf_default;
 	int retval;
@@ -127,7 +60,7 @@ static inline int port_init(uint8_t port, struct rte_mempool *mbuf_pool)
 			rte_exit(EXIT_FAILURE, "Unable to setup rx queue on port %"PRIu8"\n", port);
 			return retval;
 		}
-}
+	}
 
   // start the receive and transmit units on the device
 	retval = rte_eth_dev_start(port);
@@ -164,13 +97,6 @@ static inline int port_init(uint8_t port, struct rte_mempool *mbuf_pool)
 	return 0;
 }
 
-struct lcore_params {
-	unsigned worker_id;
-	unsigned num_workers;
-	struct rte_distributor *d;
-	struct rte_mempool *mem_pool;
-};
-
 static void quit_workers(struct rte_distributor *d, struct rte_mempool *p, unsigned num_workers)
 {
 	unsigned i;
@@ -201,7 +127,7 @@ static int receive_packets(struct lcore_params *p)
   for (port = 0; port < nb_ports; port++) {
 
     // skip ports that are not enabled
-		if ((enabled_port_mask & (1 << port)) == 0) {
+		if ((app.enabled_port_mask & (1 << port)) == 0) {
       continue;
     }
 
@@ -215,7 +141,7 @@ static int receive_packets(struct lcore_params *p)
 	while (!quit_signal_rx) {
 
 		// skip to the next enabled port
-		if ((enabled_port_mask & (1 << port)) == 0) {
+		if ((app.enabled_port_mask & (1 << port)) == 0) {
 			if (++port == nb_ports) {
         port = 0;
       }
@@ -225,7 +151,7 @@ static int receive_packets(struct lcore_params *p)
     // receive a 'burst' of many packets
 		struct rte_mbuf *bufs[BURST_SIZE*2];
 		const uint16_t nb_rx = rte_eth_rx_burst(port, 0, bufs, BURST_SIZE);
-		app_stats.rx.rx_pkts += nb_rx;
+		app_stats.rx.received_pkts += nb_rx;
 
     // distribute the packets amongst all workers
 		rte_distributor_process(d, bufs, nb_rx);
@@ -266,10 +192,11 @@ static int send_packets(struct lcore_params *p) {
 	while (!quit_signal) {
 		buf = rte_distributor_get_pkt(d, id, buf);
 
-    // TODO: do work?? send to kafka?
-
 		LOG_DEBUG(USER1, "packet received; core = %u, pkt_len = %u, data_len = %u \n",
 			rte_lcore_id(), buf->pkt_len, buf->data_len);
+
+    // TODO: do work?? send to kafka?
+
 	}
 	return 0;
 }
@@ -280,7 +207,7 @@ static void print_stats(void)
 	unsigned i;
 
 	printf("\nThread stats:\n");
-	printf(" - Received:    %"PRIu64"\n", app_stats.rx.rx_pkts);
+	printf(" - Received:    %"PRIu64"\n", app_stats.rx.received_pkts);
 	printf(" - Processed:   %"PRIu64"\n", app_stats.rx.returned_pkts);
 	printf(" - Enqueued:    %"PRIu64"\n", app_stats.rx.enqueued_pkts);
 
@@ -293,83 +220,6 @@ static void print_stats(void)
 		printf(" - Out Errs:  %"PRIu64"\n", eth_stats.oerrors);
 		printf(" - Mbuf Errs: %"PRIu64"\n", eth_stats.rx_nombuf);
 	}
-}
-
-/*
- * Print usage information to the user.
- */
-static void print_usage(const char *prgname)
-{
-	printf("%s [EAL options] -- -p PORTMASK\n"
-			"  -p PORTMASK: hexadecimal bitmask of ports to configure\n",
-			prgname);
-}
-
-/*
- * Parse the 'portmask' command line argument.
- */
-static int parse_portmask(const char *portmask)
-{
-	char *end = NULL;
-	unsigned long pm;
-
-	// parse hexadecimal string
-	pm = strtoul(portmask, &end, 16);
-
-	if ((portmask[0] == '\0') || (end == NULL) || (*end != '\0')) {
-    return -1;
-  } else if (pm == 0) {
-    return -1;
-  } else {
-    return pm;
-  }
-}
-
-/**
- * Parse the command line arguments passed to the application.
- */
-static int parse_args(int argc, char **argv)
-{
-	int opt;
-	char **argvopt;
-	int option_index;
-	char *prgname = argv[0];
-	static struct option lgopts[] = {
-		{ NULL, 0, 0, 0 }
-	};
-
-  // parse arguments to this application
-	argvopt = argv;
-	while ((opt = getopt_long(argc, argvopt, "p:", lgopts, &option_index)) != EOF) {
-		switch (opt) {
-
-		// portmask
-		case 'p':
-			enabled_port_mask = parse_portmask(optarg);
-			if (enabled_port_mask == 0) {
-				printf("Error: Invalid portmask: '%s'\n", optarg);
-				print_usage(prgname);
-				return -1;
-			}
-			break;
-
-		default:
-      printf("Error: Invalid argument: '%s'\n", optarg);
-			print_usage(prgname);
-			return -1;
-		}
-	}
-
-	if (optind <= 1) {
-		print_usage(prgname);
-		return -1;
-	}
-
-	argv[optind-1] = prgname;
-
-  // reset getopt lib
-	optind = 0;
-	return 0;
 }
 
 /*
@@ -441,7 +291,7 @@ int main(int argc, char *argv[])
 	for (port_id = 0; port_id < nb_ports; port_id++) {
 
 		// skip over ports that are not enabled
-		if ((enabled_port_mask & (1 << port_id)) == 0) {
+		if ((app.enabled_port_mask & (1 << port_id)) == 0) {
 			LOG_INFO(USER1, "Skipping over disabled port '%d'\n", port_id);
 			nb_ports_available--;
 			continue;
@@ -449,7 +299,7 @@ int main(int argc, char *argv[])
 
 		// initialize the port
     LOG_INFO(USER1, "Initializing port %u\n", (unsigned) port_id);
-		if (port_init(port_id, mbuf_pool) != 0) {
+		if (init_port(port_id, mbuf_pool) != 0) {
 			rte_exit(EXIT_FAILURE, "Cannot initialize port %"PRIu8"\n", port_id);
     }
 	}
