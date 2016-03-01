@@ -68,7 +68,7 @@
 
 #define RX_RING_SIZE 256
 #define TX_RING_SIZE 512
-#define NUM_MBUFS ((64*1024)-1)
+#define NUM_MBUFS ((64 * 1024) - 1)
 #define MBUF_CACHE_SIZE 250
 #define BURST_SIZE 32
 #define RTE_RING_SZ 1024
@@ -79,18 +79,22 @@
 /*
  * Logging definitions
  */
-#define LOG_INFO(log_type, fmt, args...) do {	\
-	RTE_LOG(INFO, log_type, fmt, ##args);		\
-} while (0)
+#define LOG_INFO(log_type, fmt, args...)      \
+    do {                                      \
+        RTE_LOG(INFO, log_type, fmt, ##args); \
+    } while (0)
 
 #ifdef DEBUG
 #define LOG_LEVEL RTE_LOG_DEBUG
-#define LOG_DEBUG(log_type, fmt, args...) do {	\
-	RTE_LOG(DEBUG, log_type, fmt, ##args);		\
-} while (0)
+#define LOG_DEBUG(log_type, fmt, args...)      \
+    do {                                       \
+        RTE_LOG(DEBUG, log_type, fmt, ##args); \
+    } while (0)
 #else
 #define LOG_LEVEL RTE_LOG_INFO
-#define LOG_DEBUG(log_type, fmt, args...) do {} while (0)
+#define LOG_DEBUG(log_type, fmt, args...) \
+    do {                                  \
+    } while (0)
 #endif
 
 volatile uint8_t quit_signal;
@@ -100,29 +104,27 @@ volatile uint8_t quit_signal_rx;
  * Tracks packet processing stats.
  */
 volatile struct app_stats {
-	struct {
-		uint64_t received_pkts;
-		uint64_t enqueued_pkts;
-		uint64_t sent_pkts;
-	} rx __rte_cache_aligned;
+    struct {
+        uint64_t received_pkts;
+        uint64_t enqueued_pkts;
+        uint64_t sent_pkts;
+    } rx __rte_cache_aligned;
 } app_stats;
 
 /**
  * Default port configuration settings.
  */
 const struct rte_eth_conf port_conf_default = {
-	.rxmode = {
-		.mq_mode = ETH_MQ_RX_RSS,
-		.max_rx_pkt_len = ETHER_MAX_LEN,
-	},
-	.txmode = {
-		.mq_mode = ETH_MQ_TX_NONE,
-	},
-	.rx_adv_conf = {
-		.rss_conf = {
-			.rss_hf = ETH_RSS_IP | ETH_RSS_UDP | ETH_RSS_TCP | ETH_RSS_SCTP,
-		}
-	},
+    .rxmode = {
+        .mq_mode = ETH_MQ_RX_RSS,
+        .max_rx_pkt_len = ETHER_MAX_LEN,
+    },
+    .txmode = {
+        .mq_mode = ETH_MQ_TX_NONE,
+    },
+    .rx_adv_conf = {.rss_conf = {
+                        .rss_hf = ETH_RSS_IP | ETH_RSS_UDP | ETH_RSS_TCP | ETH_RSS_SCTP,
+                    } },
 };
 
 /**
@@ -130,13 +132,13 @@ const struct rte_eth_conf port_conf_default = {
  */
 struct lcore_params {
 
-  unsigned worker_id;
-	unsigned num_workers;
-	struct rte_distributor *d;
-	struct rte_mempool *mem_pool;
+    unsigned worker_id;
+    unsigned num_workers;
+    struct rte_distributor* d;
+    struct rte_mempool* mem_pool;
 
 } __rte_cache_aligned;
 
-int main(int argc, char *argv[]);
+int main(int argc, char* argv[]);
 
 #endif

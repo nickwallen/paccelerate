@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #ifndef METRON_ARGS_H
 #define METRON_ARGS_H
 
@@ -64,7 +64,7 @@
  */
 struct app_params {
 
-  uint32_t enabled_port_mask;
+    uint32_t enabled_port_mask;
 
 } __rte_cache_aligned;
 
@@ -76,16 +76,16 @@ struct app_params app;
 /*
  * Print usage information to the user.
  */
-void print_usage(const char *prgname);
+void print_usage(const char* prgname);
 
 /*
  * Parse the 'portmask' command line argument.
  */
-int parse_portmask(const char *portmask);
+int parse_portmask(const char* portmask);
 
 /**
  * Parse the command line arguments passed to the application.
  */
-int parse_args(int argc, char **argv);
+int parse_args(int argc, char** argv);
 
 #endif

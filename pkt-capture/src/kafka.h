@@ -34,7 +34,7 @@ void kaf_init(int num_of_conns);
 /**
  * Publish a set of packets to a kafka topic.
  */
-int kaf_send(struct rte_mbuf *data, int num_to_send, int conn_id);
+int kaf_send(struct rte_mbuf* data, int num_to_send, int conn_id);
 
 /**
  * Closes the pool of Kafka connections.
