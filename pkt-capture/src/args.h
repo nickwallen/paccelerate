@@ -63,14 +63,14 @@
 /*
  * Logging definitions
  */
- #define LOG_ERROR(log_type, fmt, args...)      \
-     do {                                      \
-         RTE_LOG(ERR, log_type, fmt, ##args); \
-     } while (0)
- #define LOG_WARN(log_type, fmt, args...)      \
-     do {                                      \
-         RTE_LOG(WARNING, log_type, fmt, ##args); \
-     } while (0)
+#define LOG_ERROR(log_type, fmt, args...)    \
+    do {                                     \
+        RTE_LOG(ERR, log_type, fmt, ##args); \
+    } while (0)
+#define LOG_WARN(log_type, fmt, args...)         \
+    do {                                         \
+        RTE_LOG(WARNING, log_type, fmt, ##args); \
+    } while (0)
 #define LOG_INFO(log_type, fmt, args...)      \
     do {                                      \
         RTE_LOG(INFO, log_type, fmt, ##args); \
@@ -94,9 +94,9 @@
  */
 struct app_params {
     uint32_t enabled_port_mask;
-    char *kafka_broker;
-    char *kafka_topic;
-    char *kafka_config_path;
+    char* kafka_broker;
+    char* kafka_topic;
+    char* kafka_config_path;
 } __rte_cache_aligned;
 
 /*

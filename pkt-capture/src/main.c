@@ -319,7 +319,8 @@ int main(int argc, char* argv[])
     }
 
     // launch workers on each logical core
-    RTE_LCORE_FOREACH_SLAVE(lcore_id) {
+    RTE_LCORE_FOREACH_SLAVE(lcore_id)
+    {
         struct lcore_params* p = rte_malloc(NULL, sizeof(*p), 0);
         if (!p) {
             rte_panic("Error: rte_malloc failure\n");
@@ -338,7 +339,8 @@ int main(int argc, char* argv[])
     receive_packets(&p);
 
     // wait for each worker to complete
-    RTE_LCORE_FOREACH_SLAVE(lcore_id) {
+    RTE_LCORE_FOREACH_SLAVE(lcore_id)
+    {
         if (rte_eal_wait_lcore(lcore_id) < 0) {
             return -1;
         }

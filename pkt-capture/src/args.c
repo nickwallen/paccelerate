@@ -30,11 +30,11 @@ typedef int bool;
 void print_usage(const char* prgname)
 {
     printf("%s [EAL options] -- [APP options]\n"
-      "  -p PORTMASK     hex bitmask of ports to bind  [0x01]\n"
-      "  -b KAFKABROKER  kafka broker(s)               [kaf1:9092,kaf2:9092]\n"
-      "  -t KAFKATOPIC   kafka topic                   [pcap]\n"
-      "  -c KAFKACONF    kafka config file             [conf/kafka.conf]\n",
-      prgname);
+           "  -p PORTMASK     hex bitmask of ports to bind  [0x01]\n"
+           "  -b KAFKABROKER  kafka broker(s)               [kaf1:9092,kaf2:9092]\n"
+           "  -t KAFKATOPIC   kafka topic                   [pcap]\n"
+           "  -c KAFKACONF    kafka config file             [conf/kafka.conf]\n",
+        prgname);
 }
 
 /*
@@ -62,7 +62,8 @@ int parse_portmask(const char* portmask)
 /*
  * Check if a file exists
  */
-static bool file_exists(const char* filepath) {
+static bool file_exists(const char* filepath)
+{
     struct stat buf;
     return (stat(filepath, &buf) == 0);
 }
