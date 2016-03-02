@@ -23,9 +23,10 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <inttypes.h>
-#include <sys/types.h>
 #include <string.h>
+#include <sys/types.h>
 #include <sys/queue.h>
+#include <sys/stat.h>
 #include <stdarg.h>
 #include <errno.h>
 #include <getopt.h>
@@ -63,9 +64,10 @@
  * Application configuration parameters.
  */
 struct app_params {
-
     uint32_t enabled_port_mask;
-
+    char *kafka_broker;
+    char *kafka_topic;
+    char *kafka_config_path;
 } __rte_cache_aligned;
 
 /*

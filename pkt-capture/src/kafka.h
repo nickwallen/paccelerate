@@ -27,6 +27,8 @@
 #include <rte_common.h>
 #include <rte_mbuf.h>
 
+#include "args.h"
+
 /**
  * Initializes a pool of Kafka connections.
  */

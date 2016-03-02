@@ -18,14 +18,23 @@
 
 #include "args.h"
 
+typedef int bool;
+#define true 1
+#define false 0
+
+#define valid(s) (s == NULL ? false : strlen(s) > 1)
+
 /*
  * Print usage information to the user.
  */
 void print_usage(const char* prgname)
 {
-    printf("%s [EAL options] -- -p PORTMASK\n"
-           "  -p PORTMASK: hexadecimal bitmask of ports to configure\n",
-        prgname);
+    printf("%s [EAL options] -- [APP options]\n"
+      "  -p PORTMASK     hex bitmask of ports to bind  [0x01]\n"
+      "  -b KAFKABROKER  kafka broker(s)               [kaf1:9092,kaf2:9092]\n"
+      "  -t KAFKATOPIC   kafka topic                   [pcap]\n"
+      "  -c KAFKACONF    kafka config file             [conf/kafka.conf]\n",
+      prgname);
 }
 
 /*
@@ -50,6 +59,14 @@ int parse_portmask(const char* portmask)
     }
 }
 
+/*
+ * Check if a file exists
+ */
+static bool file_exists(const char* filepath) {
+    struct stat buf;
+    return (stat(filepath, &buf) == 0);
+}
+
 /**
  * Parse the command line arguments passed to the application.
  */
@@ -63,9 +80,12 @@ int parse_args(int argc, char** argv)
         { NULL, 0, 0, 0 }
     };
 
+    // initialize args
+    memset(&app, 0, sizeof(struct app_params));
+
     // parse arguments to this application
     argvopt = argv;
-    while ((opt = getopt_long(argc, argvopt, "p:", lgopts, &option_index)) != EOF) {
+    while ((opt = getopt_long(argc, argvopt, "p:b:t:c:", lgopts, &option_index)) != EOF) {
         switch (opt) {
 
         // portmask
@@ -78,6 +98,36 @@ int parse_args(int argc, char** argv)
             }
             break;
 
+        // kafka broker
+        case 'b':
+            app.kafka_broker = strdup(optarg);
+            if (!valid(app.kafka_broker)) {
+                printf("Error: Invalid kafka broker: '%s'\n", optarg);
+                print_usage(prgname);
+                return -1;
+            }
+            break;
+
+        // kafka topic
+        case 't':
+            app.kafka_topic = strdup(optarg);
+            if (!valid(app.kafka_topic)) {
+                printf("Error: Invalid kafka topic: '%s'\n", optarg);
+                print_usage(prgname);
+                return -1;
+            }
+            break;
+
+        // kafka config path
+        case 'c':
+            app.kafka_config_path = strdup(optarg);
+            if (!valid(app.kafka_config_path) || !file_exists(app.kafka_config_path)) {
+                printf("Error: Invalid kafka config: '%s'\n", optarg);
+                print_usage(prgname);
+                return -1;
+            }
+            break;
+
         default:
             printf("Error: Invalid argument: '%s'\n", optarg);
             print_usage(prgname);
@@ -85,7 +135,21 @@ int parse_args(int argc, char** argv)
         }
     }
 
-    if (optind <= 1) {
+    // check for required command-line arguments
+    if (app.enabled_port_mask == 0) {
+        printf("Error: Missing -p PORTMASK\n");
+        print_usage(prgname);
+        return -1;
+    }
+
+    if (!valid(app.kafka_broker)) {
+        printf("Error: Missing -b KAFKABROKER\n");
+        print_usage(prgname);
+        return -1;
+    }
+
+    if (!valid(app.kafka_topic)) {
+        printf("Error: Missing -t KAFKATOPIC\n");
         print_usage(prgname);
         return -1;
     }

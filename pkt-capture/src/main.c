@@ -265,7 +265,7 @@ int main(int argc, char* argv[])
     // parse arguments to the application
     ret = parse_args(argc, argv);
     if (ret < 0) {
-        rte_exit(EXIT_FAILURE, "Error: Invalid distributor parameters\n");
+        rte_exit(EXIT_FAILURE, "Error: Invalid parameters\n");
     }
 
     // check number of ethernet devices

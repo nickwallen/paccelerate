@@ -26,7 +26,6 @@
 static rd_kafka_t** kaf_h;
 static rd_kafka_topic_t** kaf_top_h;
 static int num_conns;
-static const char* topic_nm = "pcap";
 
 /**
  * Initializes a pool of Kafka connections.
@@ -34,7 +33,6 @@ static const char* topic_nm = "pcap";
 void kaf_init(int num_of_conns)
 {
     int i;
-    int size = 512;
     char errstr[512];
     rd_kafka_conf_res_t rc;
 
@@ -48,7 +46,7 @@ void kaf_init(int num_of_conns)
     for (i = 0; i < num_of_conns; i++) {
         // configure kafka global settings
         rd_kafka_conf_t* kaf_conf = rd_kafka_conf_new();
-        rc = rd_kafka_conf_set(kaf_conf, "metadata.broker.list", "localhost:9092", errstr, size);
+        rc = rd_kafka_conf_set(kaf_conf, "metadata.broker.list", app.kafka_broker, errstr, sizeof(errstr));
         if (RD_KAFKA_CONF_OK != rc) {
             rte_exit(EXIT_FAILURE, "Unable to set kafka broker: %s", errstr);
         }
@@ -61,9 +59,9 @@ void kaf_init(int num_of_conns)
 
         // configure kafka topic settings
         rd_kafka_topic_conf_t* topic_conf = rd_kafka_topic_conf_new();
-        kaf_top_h[i] = rd_kafka_topic_new(kaf_h[i], topic_nm, topic_conf);
+        kaf_top_h[i] = rd_kafka_topic_new(kaf_h[i], app.kafka_topic, topic_conf);
         if (!kaf_top_h[i]) {
-            rte_exit(EXIT_FAILURE, "Cannot init kafka topic: %s", topic_nm);
+            rte_exit(EXIT_FAILURE, "Cannot init kafka topic: %s", app.kafka_topic);
         }
     }
 }
