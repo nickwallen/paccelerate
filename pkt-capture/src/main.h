@@ -76,27 +76,6 @@
 // uncommnet below line to enable debug logs
 #define DEBUG
 
-/*
- * Logging definitions
- */
-#define LOG_INFO(log_type, fmt, args...)      \
-    do {                                      \
-        RTE_LOG(INFO, log_type, fmt, ##args); \
-    } while (0)
-
-#ifdef DEBUG
-#define LOG_LEVEL RTE_LOG_DEBUG
-#define LOG_DEBUG(log_type, fmt, args...)      \
-    do {                                       \
-        RTE_LOG(DEBUG, log_type, fmt, ##args); \
-    } while (0)
-#else
-#define LOG_LEVEL RTE_LOG_INFO
-#define LOG_DEBUG(log_type, fmt, args...) \
-    do {                                  \
-    } while (0)
-#endif
-
 volatile uint8_t quit_signal;
 volatile uint8_t quit_signal_rx;
 

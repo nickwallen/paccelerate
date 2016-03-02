@@ -30,7 +30,7 @@
 #include <stdarg.h>
 #include <errno.h>
 #include <getopt.h>
-
+#include <glib.h>
 #include <rte_common.h>
 #include <rte_byteorder.h>
 #include <rte_log.h>
@@ -59,6 +59,35 @@
 #include <rte_tcp.h>
 #include <rte_lpm.h>
 #include <rte_string_fns.h>
+
+/*
+ * Logging definitions
+ */
+ #define LOG_ERROR(log_type, fmt, args...)      \
+     do {                                      \
+         RTE_LOG(ERR, log_type, fmt, ##args); \
+     } while (0)
+ #define LOG_WARN(log_type, fmt, args...)      \
+     do {                                      \
+         RTE_LOG(WARNING, log_type, fmt, ##args); \
+     } while (0)
+#define LOG_INFO(log_type, fmt, args...)      \
+    do {                                      \
+        RTE_LOG(INFO, log_type, fmt, ##args); \
+    } while (0)
+
+#ifdef DEBUG
+#define LOG_LEVEL RTE_LOG_DEBUG
+#define LOG_DEBUG(log_type, fmt, args...)      \
+    do {                                       \
+        RTE_LOG(DEBUG, log_type, fmt, ##args); \
+    } while (0)
+#else
+#define LOG_LEVEL RTE_LOG_INFO
+#define LOG_DEBUG(log_type, fmt, args...) \
+    do {                                  \
+    } while (0)
+#endif
 
 /**
  * Application configuration parameters.

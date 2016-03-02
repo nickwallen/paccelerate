@@ -31,12 +31,14 @@ APP = pcapture
 # all source are stored in SRCS-y
 SRCS-y := main.c args.c kafka.c
 
-KAFKALIB    = -lrdkafka -L/usr/local/lib
-KAFKAINC    = -I/usr/local/include/librdkafka/
+KAFKALIB = -lrdkafka -L/usr/local/lib
+KAFKAINC = -I/usr/local/include/librdkafka/
 
-LDLIBS += $(KAFKALIB)
-CFLAGS += $(WERROR_FLAGS) $(KAFKAINC)
+GLIB     = $(shell pkg-config --libs glib-2.0) -lgthread-2.0
+GLIBINC  = $(shell pkg-config --cflags glib-2.0)
 
+LDLIBS += $(KAFKALIB) $(GLIB)
+CFLAGS += $(WERROR_FLAGS) $(KAFKAINC) $(GLIBINC)
 
 # workaround for a gcc bug with noreturn attribute
 # http://gcc.gnu.org/bugzilla/show_bug.cgi?id=12603

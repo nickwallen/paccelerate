@@ -28,6 +28,79 @@ static rd_kafka_topic_t** kaf_top_h;
 static int num_conns;
 
 /**
+ * A callback executed for each global Kafka option.
+ */
+static void kaf_global_option(const char *key, const char *val, void *arg)
+{
+  rd_kafka_conf_t *conf = (rd_kafka_conf_t *)arg;
+  rd_kafka_conf_res_t rc;
+  char err[512];
+
+  rc = rd_kafka_conf_set(conf, key, val, err, sizeof(err));
+  if (RD_KAFKA_CONF_OK != rc) {
+    LOG_WARN(USER1, "unable to set kafka global option: '%s' = '%s': %s\n", key, val, err);
+  }
+}
+
+/**
+ * A callback executed for topic-level Kafka option.
+ */
+static void kaf_topic_option(const char *key, const char *val, void *arg)
+{
+  rd_kafka_topic_conf_t *conf = (rd_kafka_topic_conf_t *)arg;
+  rd_kafka_conf_res_t rc;
+  char err[512];
+
+  rc = rd_kafka_topic_conf_set(conf, key, val, err, sizeof(err));
+  if (RD_KAFKA_CONF_OK != rc) {
+    LOG_WARN(USER1, "unable to set kafka topic option: '%s' = '%s': %s\n", key, val, err);
+  }
+}
+
+/**
+ * Parses the configuration values from a configuration file.
+ */
+static void parse_kafka_config(char *file_path, const char *group,
+  void (*option_cb)(const char *key, const char *val, void *arg), void *arg) {
+
+  gsize i;
+    gchar *value;
+    gchar **keys;
+    gsize num_keys;
+  GError *err = NULL;
+  GError **errs = NULL;
+
+  // load the configuration file
+  GKeyFile *gkf = g_key_file_new();
+  if (!g_key_file_load_from_file(gkf, file_path, G_KEY_FILE_NONE, &err)) {
+    LOG_ERROR(USER1, "bad config: %s: %s\n", file_path, err->message);
+  }
+
+  // only grab keys within the specified group
+  keys = g_key_file_get_keys(gkf, group, &num_keys, errs);
+  if (keys) {
+
+    // execute the callback for each key/value
+    for (i = 0; i < num_keys; i++) {
+      value = g_key_file_get_value(gkf, group, keys[i], errs);
+      if (value) {
+        LOG_DEBUG(USER1, "config[%s]: %s = %s\n", group, keys[i], value);
+        option_cb(keys[i], value, arg);
+      }
+      else {
+        LOG_INFO(USER1, "bad config: %s: %s = %s: %s\n", file_path, keys[i], value, errs[0]->message);
+      }
+    }
+
+  } else {
+    LOG_WARN(USER1, "bad config: %s: %s\n", file_path, errs[0]->message);
+  }
+
+  g_strfreev(keys);
+  g_key_file_free(gkf);
+}
+
+/**
  * Initializes a pool of Kafka connections.
  */
 void kaf_init(int num_of_conns)
@@ -44,21 +117,32 @@ void kaf_init(int num_of_conns)
     kaf_top_h = calloc(num_of_conns, sizeof(rd_kafka_topic_t*));
 
     for (i = 0; i < num_of_conns; i++) {
-        // configure kafka global settings
+
+        // configure kafka connection; values parsed from kafka config file
         rd_kafka_conf_t* kaf_conf = rd_kafka_conf_new();
+        if (NULL != app.kafka_config_path) {
+            parse_kafka_config(app.kafka_config_path, "kafka-global", kaf_global_option, (void *)kaf_conf);
+        }
+
+        // set the kafka broker
         rc = rd_kafka_conf_set(kaf_conf, "metadata.broker.list", app.kafka_broker, errstr, sizeof(errstr));
         if (RD_KAFKA_CONF_OK != rc) {
             rte_exit(EXIT_FAILURE, "Unable to set kafka broker: %s", errstr);
         }
 
-        // create a new kafka handle
+        // create a new kafka connection
         kaf_h[i] = rd_kafka_new(RD_KAFKA_PRODUCER, kaf_conf, errstr, sizeof(errstr));
         if (!kaf_h[i]) {
             rte_exit(EXIT_FAILURE, "Cannot init kafka connection: %s", errstr);
         }
 
-        // configure kafka topic settings
+        // configure kafka topic; values parsed from kafka config file
         rd_kafka_topic_conf_t* topic_conf = rd_kafka_topic_conf_new();
+        if (NULL != app.kafka_config_path) {
+            parse_kafka_config(app.kafka_config_path, "kafka-topic", kaf_topic_option, (void *)topic_conf);
+        }
+
+        // connect to a kafka topic
         kaf_top_h[i] = rd_kafka_topic_new(kaf_h[i], app.kafka_topic, topic_conf);
         if (!kaf_top_h[i]) {
             rte_exit(EXIT_FAILURE, "Cannot init kafka topic: %s", app.kafka_topic);
@@ -72,7 +156,6 @@ void kaf_init(int num_of_conns)
 void kaf_close(void)
 {
     int i;
-
     for (i = 0; i < num_conns; i++) {
         // wait for messages to be delivered
         while (rd_kafka_outq_len(kaf_h[i]) > 0) {
