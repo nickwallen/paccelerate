@@ -19,9 +19,10 @@
 #ifndef METRON_KAFKA_H
 #define METRON_KAFKA_H
 
-#include <librdkafka/rdkafka.h>
 #include <string.h>
 #include <sys/time.h>
+#include <endian.h>
+#include <librdkafka/rdkafka.h>
 
 #include <rte_common.h>
 #include <rte_mbuf.h>
