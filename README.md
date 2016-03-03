@@ -1,4 +1,14 @@
-Virtualized Fast Packet Processing
-==================================
+Paccelerate
+===========
 
-Provisions a host using Vagrant and Ansible with the Data Plane Development Kit ([DPDK](http://dpdk.org/)).  This host can then be used to launch fast packet processing applications that leverage DPDK in a virtualized environment.
+A [Metron](https://metron.incubator.apache.org/) probe that performs network packet capture leveraging the Data Plane Development Kit ([DPDK](http://dpdk.org/)).
+
+Getting Started
+---------------
+
+```
+vagrant plugin install vagrant-hostmanager
+vagrant plugin install vagrant-vbguest
+ansible-galaxy install -r requirements.yml
+vagrant up
+```

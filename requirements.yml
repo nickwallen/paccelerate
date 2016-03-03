@@ -1,9 +1,12 @@
 ---
 - name: dpdk
-  src: https://github.com/nickwallen/metron-provision-dpdk.git
+  src: https://github.com/nickwallen/metron-provision-paccelerate.git
 
 - name: pcap-replay
   src: https://github.com/nickwallen/metron-provision-pcap-replay.git
 
 - name: kafka
   src: https://github.com/nickwallen/metron-provision-kafka.git
+
+- name: librdkafka
+  src: https://github.com/nickwallen/metron-provision-librdkafka
