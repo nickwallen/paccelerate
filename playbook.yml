@@ -4,7 +4,7 @@
 # produces network traffic
 #
 - hosts: source
-  sudo: yes
+  become: yes
   vars:
     pcap_replay_interface: "enp0s8"
   roles:
@@ -14,12 +14,15 @@
 # consumes network traffic
 #
 - hosts: sink
-  sudo: yes
+  become: yes
   vars:
       dpdk_device: ["00:08.0"]
       dpdk_target: "x86_64-native-linuxapp-gcc"
       num_huge_pages: 512
+      paccelerate_portmask: 0x2
+      paccelerate_topic: pcap
+      kafka_broker_url: sink:9092
   roles:
-    - role: dpdk
     - role: librdkafka
     - role: kafka
+    - role: paccelerate

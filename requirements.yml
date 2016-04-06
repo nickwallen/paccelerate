@@ -1,5 +1,5 @@
 ---
-- name: dpdk
+- name: paccelerate
   src: https://github.com/nickwallen/metron-provision-paccelerate.git
 
 - name: pcap-replay

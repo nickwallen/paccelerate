@@ -31,7 +31,7 @@ APP = pcapture
 # all source are stored in SRCS-y
 SRCS-y := main.c args.c kafka.c
 
-KAFKALIB = -lrdkafka -L/usr/local/lib
+KAFKALIB = -L/usr/local/lib -lrdkafka 
 KAFKAINC = -I/usr/local/include/librdkafka/
 
 GLIB     = $(shell pkg-config --libs glib-2.0) -lgthread-2.0
