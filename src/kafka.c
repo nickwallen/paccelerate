@@ -204,7 +204,7 @@ int kaf_send(struct rte_mbuf* data, int pkt_count, int conn_id)
     for (i = 0; i < pkt_count; i++) {
         kaf_msgs[i].err = 0;
         kaf_msgs[i].rkt = kaf_topic;
-        kaf_msgs[i].partition = RD_KAFKA_PARTITION_UA;
+        kaf_msgs[i].partition = partition;
         kaf_msgs[i].payload = rte_ctrlmbuf_data(&data[i]);
         kaf_msgs[i].len = rte_ctrlmbuf_len(&data[i]);
         kaf_msgs[i].key = (void*)now[0];
@@ -213,7 +213,7 @@ int kaf_send(struct rte_mbuf* data, int pkt_count, int conn_id)
     }
 
     // hand all of the messages off to kafka
-    pkts_sent = rd_kafka_produce_batch(kaf_topic, partition, 0, kaf_msgs, pkt_count);
+    pkts_sent = rd_kafka_produce_batch(kaf_topic, partition, RD_KAFKA_MSG_F_COPY, kaf_msgs, pkt_count);
 
     // did we drop packets?
     drops = pkt_count - pkts_sent;
