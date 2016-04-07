@@ -19,7 +19,7 @@
       dpdk_device: ["00:08.0"]
       dpdk_target: "x86_64-native-linuxapp-gcc"
       num_huge_pages: 512
-      paccelerate_portmask: 0x2
+      paccelerate_portmask: 0x1
       paccelerate_topic: pcap
       kafka_broker_url: localhost:9092
       sniff_interface: enp0s8
