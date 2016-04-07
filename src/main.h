@@ -73,8 +73,8 @@
 #define BURST_SIZE 32
 #define RTE_RING_SZ 1024
 
-// uncommnet below line to enable debug logs
-#define DEBUG
+// uncomment below line to enable debug logs
+#define DEBUG 1
 
 volatile uint8_t quit_signal;
 volatile uint8_t quit_signal_rx;
@@ -101,9 +101,11 @@ const struct rte_eth_conf port_conf_default = {
     .txmode = {
         .mq_mode = ETH_MQ_TX_NONE,
     },
-    .rx_adv_conf = {.rss_conf = {
-                        .rss_hf = ETH_RSS_IP | ETH_RSS_UDP | ETH_RSS_TCP | ETH_RSS_SCTP,
-                    } },
+    .rx_adv_conf = {
+      .rss_conf = {
+        .rss_hf = ETH_RSS_IP | ETH_RSS_UDP | ETH_RSS_TCP | ETH_RSS_SCTP,
+      }
+    },
 };
 
 /**

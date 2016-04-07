@@ -94,7 +94,6 @@
  */
 struct app_params {
     uint32_t enabled_port_mask;
-    char* kafka_broker;
     char* kafka_topic;
     char* kafka_config_path;
 } __rte_cache_aligned;

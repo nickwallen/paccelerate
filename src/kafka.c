@@ -125,12 +125,6 @@ void kaf_init(int num_of_conns)
             parse_kafka_config(app.kafka_config_path, "kafka-global", kaf_global_option, (void*)kaf_conf);
         }
 
-        // set the kafka broker
-        rc = rd_kafka_conf_set(kaf_conf, "metadata.broker.list", app.kafka_broker, errstr, sizeof(errstr));
-        if (RD_KAFKA_CONF_OK != rc) {
-            rte_exit(EXIT_FAILURE, "Unable to set kafka broker: %s", errstr);
-        }
-
         // create a new kafka connection
         kaf_h[i] = rd_kafka_new(RD_KAFKA_PRODUCER, kaf_conf, errstr, sizeof(errstr));
         if (!kaf_h[i]) {
@@ -191,12 +185,12 @@ int kaf_send(struct rte_mbuf* data, int pkt_count, int conn_id)
     int pkts_sent = 0;
     int drops;
     rd_kafka_message_t kaf_msgs[pkt_count];
-    uint64_t *now;
 
     // TODO: will librdkafka clean this up for us??!?!
+    uint64_t *now = malloc(sizeof(uint64_t));
+
     // the current time in microseconds from the epoch (in big-endian aka network
     // byte order) is added as a message key before being sent to kafka
-    now = malloc(sizeof(uint64_t));
     *now = htobe64(current_time());
 
     // find the topic connection based on the conn_id

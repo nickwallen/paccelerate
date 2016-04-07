@@ -31,7 +31,6 @@ void print_usage(const char* prgname)
 {
     printf("%s [EAL options] -- [APP options]\n"
            "  -p PORTMASK     hex bitmask of ports to bind  [0x01]\n"
-           "  -b KAFKABROKER  kafka broker(s)               [kaf1:9092,kaf2:9092]\n"
            "  -t KAFKATOPIC   kafka topic                   [pcap]\n"
            "  -c KAFKACONF    kafka config file             [conf/kafka.conf]\n",
         prgname);
@@ -99,16 +98,6 @@ int parse_args(int argc, char** argv)
             }
             break;
 
-        // kafka broker
-        case 'b':
-            app.kafka_broker = strdup(optarg);
-            if (!valid(app.kafka_broker)) {
-                printf("Error: Invalid kafka broker: '%s'\n", optarg);
-                print_usage(prgname);
-                return -1;
-            }
-            break;
-
         // kafka topic
         case 't':
             app.kafka_topic = strdup(optarg);
@@ -139,12 +128,6 @@ int parse_args(int argc, char** argv)
     // check for required command-line arguments
     if (app.enabled_port_mask == 0) {
         printf("Error: Missing -p PORTMASK\n");
-        print_usage(prgname);
-        return -1;
-    }
-
-    if (!valid(app.kafka_broker)) {
-        printf("Error: Missing -b KAFKABROKER\n");
         print_usage(prgname);
         return -1;
     }

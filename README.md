@@ -16,5 +16,5 @@ vagrant up
 To manually run the capture process, run the following command.
 
 ```
-pcapture -- -p 0x1 -b localhost:9092 -t pcap -c /etc/paccelerate.conf
+pcapture -- -p 0x1 -t pcap -c /etc/paccelerate.conf
 ```
