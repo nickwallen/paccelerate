@@ -108,7 +108,6 @@ void kaf_init(int num_of_conns)
 {
     int i;
     char errstr[512];
-    rd_kafka_conf_res_t rc;
 
     // the number of connections to maintain
     num_conns = num_of_conns;
