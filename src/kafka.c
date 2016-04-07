@@ -191,11 +191,13 @@ int kaf_send(struct rte_mbuf* data, int pkt_count, int conn_id)
     int pkts_sent = 0;
     int drops;
     rd_kafka_message_t kaf_msgs[pkt_count];
-    uint64_t now[1];
+    uint64_t *now;
 
+    // TODO: will librdkafka clean this up for us??!?!
     // the current time in microseconds from the epoch (in big-endian aka network
     // byte order) is added as a message key before being sent to kafka
-    now[0] = htobe64(current_time());
+    now = malloc(sizeof(uint64_t));
+    *now = htobe64(current_time());
 
     // find the topic connection based on the conn_id
     rd_kafka_topic_t* kaf_topic = kaf_top_h[conn_id];
@@ -207,8 +209,12 @@ int kaf_send(struct rte_mbuf* data, int pkt_count, int conn_id)
         kaf_msgs[i].partition = partition;
         kaf_msgs[i].payload = rte_ctrlmbuf_data(&data[i]);
         kaf_msgs[i].len = rte_ctrlmbuf_len(&data[i]);
-        kaf_msgs[i].key = (void*)now[0];
-        kaf_msgs[i].key_len = sizeof(now[0]);
+
+        // kaf_msgs[i].key = (void*)now[0];
+        // kaf_msgs[i].key_len = sizeof(now[0]);
+        kaf_msgs[i].key = (void*) now;
+        kaf_msgs[i].key_len = sizeof(uint64_t);
+
         kaf_msgs[i].offset = 0;
     }
 

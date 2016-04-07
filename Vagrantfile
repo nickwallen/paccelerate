@@ -22,11 +22,6 @@ Vagrant.configure("2") do |config|
       vb.memory = 1024
       vb.cpus = 1
     end
-
-    # provisioning
-    node.vm.provision :ansible do |ansible|
-      ansible.playbook = "playbook.yml"
-    end
   end
 
   #
@@ -49,13 +44,10 @@ Vagrant.configure("2") do |config|
       vb.customize ["modifyvm", :id, "--nicpromisc2", "allow-all"]
       vb.customize ["modifyvm", :id, "--nictype2","82545EM"]
     end
+  end
 
-    # provisioning
-    node.vm.provision :ansible do |ansible|
-      ansible.playbook = "playbook.yml"
-    end
-
-    # sync source code
-    node.vm.synced_folder ".", "/vagrant"
+  # provisioning
+  config.vm.provision :ansible do |ansible|
+    ansible.playbook = "playbook.yml"
   end
 end

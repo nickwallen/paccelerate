@@ -22,6 +22,7 @@
       paccelerate_portmask: 0x2
       paccelerate_topic: pcap
       kafka_broker_url: sink:9092
+      sniff_interface: enp0s8
   roles:
     - role: librdkafka
     - role: kafka
